@@ -1,10 +1,28 @@
 import sqlite3
 import hashlib
 import datetime
+import os
 
 user_db_file_location = "database_file/users.db"
 note_db_file_location = "database_file/notes.db"
 image_db_file_location = "database_file/images.db"
+
+if os.getenv('FLASK_ENV') == 'development':
+    database_uri = 'sqlite:///database_file/flask.db'
+elif os.getenv('FLASK_ENV') == 'staging':
+    db_username = os.getenv('STAGING_DB_USERNAME')
+    db_password = os.getenv('STAGING_DB_PASSWORD')
+    db_host = os.getenv('STAGING_DB_HOST')
+    db_name = os.getenv('STAGING_DB_NAME')
+    database_uri = f'postgresql://{db_username}:{db_password}@{db_host}/{db_name}'
+elif os.getenv('FLASK_ENV') == 'production':
+    db_username = os.getenv('PRODUCTION_DB_USERNAME')
+    db_password = os.getenv('PRODUCTION_DB_PASSWORD')
+    db_host = os.getenv('PRODUCTION_DB_HOST')
+    db_name = os.getenv('PRODUCTION_DB_NAME')
+    database_uri = f'postgresql://{db_username}:{db_password}@{db_host}/{db_name}'
+else:
+    database_uri = 'sqlite:///database_file/flask.db'
 
 def list_users():
     _conn = sqlite3.connect(user_db_file_location)
