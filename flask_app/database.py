@@ -85,7 +85,6 @@ def migrate_data():
         with users_engine.connect() as conn:
             users_data = conn.execute(select(users_source_table)).mappings().all()
             for row in users_data:
-                print(row)
                 session.execute(users_table.insert().values(
                     id=row['id'],
                     pw=row['pw']
