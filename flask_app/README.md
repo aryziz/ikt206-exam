@@ -30,6 +30,11 @@ For more basic knowledge of Flask, you can refer to [a tutorial on Tutorialspoin
 - Step 3: Go to this app's directory and run `python app.py`
 
 
+## Running tests
+
+- Step 1: Run `pytest`
+- Step 2: Test coverage with `pytest --cov=flask_app flask_app/` from root
+
 
 ## Details about This Toy App
 

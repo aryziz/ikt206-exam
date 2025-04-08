@@ -32,6 +32,7 @@ def register_routes(app):
 
     @app.route("/")
     def FUN_root():
+        print(app.config["SECRET_KEY"])
         return render_template("index.html")
 
     @app.route("/public/")
