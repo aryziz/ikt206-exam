@@ -3,6 +3,7 @@ from routes import register_routes
 from flask import Flask
 from dotenv import load_dotenv
 from database import migrate_data
+from helpers.gunicorn import StandaloneApplication, number_of_workers
 import os
 
 
@@ -46,6 +47,10 @@ if __name__ == "__main__":
     app = create_app()
     register_routes(app)
     migrate_data()
-    #initialize_image_pool()
-    port: int = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    
+    if app.config["FLASK_ENV"] in ["staging", "production"]:
+        StandaloneApplication(app, {'bind': '%s:%s' % ('0.0.0.0', '5000'),
+            'workers': number_of_workers()}).run()
+    else:
+        port: int = int(os.environ.get("PORT", 5000))
+        app.run(debug=True, host="0.0.0.0", port=port)

@@ -27,6 +27,8 @@ RUN pyinstaller \
     --onedir \
     --add-data "templates:templates" \
     --add-data "static:static" \
+    --hiddenimport gunicorn.glogging \
+    --hiddenimport gunicorn.workers.sync \
     --hidden-import config \
     --hidden-import routes \
     app.py
