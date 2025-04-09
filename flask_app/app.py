@@ -2,6 +2,7 @@
 from routes import register_routes
 from flask import Flask
 from dotenv import load_dotenv
+from database import migrate_data
 import os
 
 
@@ -37,12 +38,14 @@ def create_app() -> Flask:
     load_dotenv()
     set_config(app)
     
-    print(f"Creating app in {os.getenv("ENVIRONMENT").lower() if os.getenv("ENVIRONMENT").isalpha() else "development"} mode...")
+    print(f"Creating app in {app.config.get("FLASK_ENV")} mode...")
 
     return app
 
 if __name__ == "__main__":
     app = create_app()
     register_routes(app)
+    migrate_data()
+    #initialize_image_pool()
     port: int = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)

@@ -1,0 +1,32 @@
+networks:
+  app:
+  
+services:
+  app:
+    image: app:latest
+    container_name: group-name-app
+    restart: always
+    environment:
+      - ENVIRONMENT=staging
+      - STAGING_DB_NAME=postgres
+      - STAGING_DB_HOST=db
+      - STAGING_DB_USERNAME=dbusername
+      - STAGING_DB_PASSWORD=dbpassword
+    ports:
+      - "5000:5000"
+    networks:
+      - app
+    depends_on:
+      - db
+  db:
+    image: postgres:latest
+    container_name: group-name-database
+    restart: always
+    environment:
+      - POSTGRES_USER=dbusername
+      - POSTGRES_PASSWORD=dbpassword
+      - POSTGRES_DB=postgres
+    networks:
+      - app
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data

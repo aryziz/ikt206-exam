@@ -1,7 +1,7 @@
 import hashlib
 import datetime
 import os
-from sqlalchemy import create_engine, Table, MetaData, delete, insert, Column, String, inspect, select
+from sqlalchemy import create_engine, Table, MetaData, delete, insert, Column, String, inspect, select, func
 from sqlalchemy.orm import sessionmaker
 
 user_db_file_location = "database_file/users.db"
@@ -33,91 +33,91 @@ print("Database type:", engine.dialect.name)
 inspector = inspect(engine)
 tables = inspector.get_table_names()
 
-
-
-    
-if 'users' not in tables:
-    users_table = Table('users', metadata,
-                        Column('id', String, primary_key=True),
-                        Column('pw', String)
-                        )
-if 'notes' not in tables:
-    notes_table = Table('notes', metadata,
-                        Column('user', String),
-                        Column('timestamp', String),
-                        Column('note', String),
-                        Column('note_id', String)
-                        )
-if 'images' not in tables:
-    images_table = Table('images', metadata,
-                         Column('uid', String, primary_key=True),
-                         Column('owner', String),
-                         Column('name', String),
-                         Column('timestamp', String)
-                         )
-    
-# Create the tables in the database
-metadata.create_all(engine)
-
 def migrate_data():
     print("Starting data migration...")
-    # Source database engines
+
+    # Table declarations
+    global users_table, notes_table, images_table
+
+    # Check existing tables
+    existing_tables = set(inspect(engine).get_table_names())
+
+    if 'users' in existing_tables:
+        users_table = Table('users', metadata, autoload_with=engine)
+    else:
+        print("Creating users table...")
+        users_table = Table('users', metadata,
+                            Column('id', String, primary_key=True),
+                            Column('pw', String)
+                            )
+
+    if 'notes' in existing_tables:
+        notes_table = Table('notes', metadata, autoload_with=engine)
+    else:
+        print("Creating notes table...")
+        notes_table = Table('notes', metadata,
+                            Column('user', String),
+                            Column('timestamp', String),
+                            Column('note', String),
+                            Column('note_id', String)
+                            )
+
+    if 'images' in existing_tables:
+        images_table = Table('images', metadata, autoload_with=engine)
+    else:
+        print("Creating images table...")
+        images_table = Table('images', metadata,
+                            Column('uid', String, primary_key=True),
+                            Column('owner', String),
+                            Column('name', String),
+                            Column('timestamp', String)
+                            )
+
+    # Create tables that didn't already exist
+    metadata.create_all(engine)
+    print("Tables verified and created as needed.")
+
+    # Source SQLite databases
     users_engine = create_engine(f'sqlite:///{user_db_file_location}')
     notes_engine = create_engine(f'sqlite:///{note_db_file_location}')
     images_engine = create_engine(f'sqlite:///{image_db_file_location}')
 
-    # Source metadata
-    users_metadata = MetaData()
-    notes_metadata = MetaData()
-    images_metadata = MetaData()
-
     # Reflect source tables
-    users_source_table = Table('users', users_metadata, autoload_with=users_engine)
-    notes_source_table = Table('notes', notes_metadata, autoload_with=notes_engine)
-    images_source_table = Table('images', images_metadata, autoload_with=images_engine)
+    users_source_table = Table('users', MetaData(), autoload_with=users_engine)
+    notes_source_table = Table('notes', MetaData(), autoload_with=notes_engine)
+    images_source_table = Table('images', MetaData(), autoload_with=images_engine)
 
-    # Target session
+    # Begin target session
     session = Session()
-    
 
     # Migrate users
-    if 'users' not in tables:
+    users_count = session.execute(select(func.count()).select_from(users_table)).scalar()
+    if users_count == 0:
+        print("Migrating users...")
         with users_engine.connect() as conn:
             users_data = conn.execute(select(users_source_table)).mappings().all()
-            for row in users_data:
-                session.execute(users_table.insert().values(
-                    id=row['id'],
-                    pw=row['pw']
-                ))
+            session.execute(users_table.insert(), users_data)
 
     # Migrate notes
-    if 'notes' not in tables:
+    notes_count = session.execute(select(func.count()).select_from(notes_table)).scalar()
+    if notes_count == 0:
+        print("Migrating notes...")
         with notes_engine.connect() as conn:
             notes_data = conn.execute(select(notes_source_table)).mappings().all()
-            for row in notes_data:
-                session.execute(notes_table.insert().values(
-                    user=row['user'],
-                    timestamp=row['timestamp'],
-                    note=row['note'],
-                    note_id=row['note_id']
-                ))
+            session.execute(notes_table.insert(), notes_data)
 
     # Migrate images
-    if 'images' not in tables:
+    images_count = session.execute(select(func.count()).select_from(images_table)).scalar()
+    if images_count == 0:
+        print("Migrating images...")
         with images_engine.connect() as conn:
             images_data = conn.execute(select(images_source_table)).mappings().all()
-            for row in images_data:
-                session.execute(images_table.insert().values(
-                    uid=row['uid'],
-                    owner=row['owner'],
-                    name=row['name'],
-                    timestamp=row['timestamp']
-                ))
+            session.execute(images_table.insert(), images_data)
 
-    # Commit and close session
     session.commit()
     session.close()
     print("Data migration completed successfully!")
+
 
 
 # List all users in the database

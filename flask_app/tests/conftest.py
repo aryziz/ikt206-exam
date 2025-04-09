@@ -2,7 +2,6 @@ import pytest
 from flask import Flask
 from app import create_app
 from routes import register_routes
-from flask.testing import FlaskClient
 
 @pytest.fixture()
 def app():
